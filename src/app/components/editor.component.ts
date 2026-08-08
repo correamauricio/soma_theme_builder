@@ -14,20 +14,20 @@ import { TokenService } from '../services/token.service';
          [class.border-r-0]="!tokenService.isJsonEditorOpen()">
          
       <!-- Header -->
-      <div class="p-0 border-b border-gray-800 font-semibold bg-gray-900 z-10 sticky top-0 flex flex-col min-w-[26rem]">
+      <div class="p-0 border-b border-gray-800 font-semibold bg-gray-900 z-10 sticky top-0 flex flex-col min-w-104">
         <div class="p-4 flex items-center justify-between border-b border-gray-800">
           <div class="flex items-center space-x-2 whitespace-nowrap">
-            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+            <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
             <span>Raw JSON</span>
           </div>
           <button class="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-800 transition-colors" (click)="tokenService.isJsonEditorOpen.set(false)" title="Hide JSON Editor">
-             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+             <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
       </div>
       
       <!-- Code Mode -->
-      <div class="flex-1 flex flex-col p-0 overflow-hidden min-w-[26rem]">
+      <div class="flex-1 flex flex-col p-0 overflow-hidden min-w-104">
         <div class="p-2 bg-gray-800 text-xs text-gray-400 font-mono border-b border-gray-700 flex justify-between items-center whitespace-nowrap">
           <span>design-tokens.json</span>
           <span class="text-red-400" *ngIf="jsonError()">Invalid JSON format</span>
@@ -119,7 +119,7 @@ export class EditorComponent {
       const parsed = JSON.parse(val);
       this.jsonError.set(false);
       this.isDirty.set(true);
-      this.tokenService.rawTokens.set(parsed);
+      this.tokenService.updateActiveFileContent(parsed);
       setTimeout(() => this.isDirty.set(false), 2000);
     } catch (err) {
       this.jsonError.set(true);
