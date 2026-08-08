@@ -10,8 +10,8 @@ import { TokenService } from '../services/token.service';
     <div class="flex flex-col w-full">
       <header class="bg-gray-900 text-white p-4 flex justify-between items-center shadow-md z-20">
         <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 rounded bg-blue-500 flex items-center justify-center font-bold text-white">S</div>
-          <h1 class="text-xl font-bold tracking-wider">Soma Theme Builder</h1>
+          <div class="w-8 h-8 rounded bg-blue-500 flex items-center justify-center font-bold text-white">D</div>
+          <h1 class="text-xl font-bold tracking-wider">DTCG Forge</h1>
         </div>
         
         <div class="flex space-x-3">
