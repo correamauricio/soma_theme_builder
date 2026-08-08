@@ -29,7 +29,7 @@ import { TokenService } from '../services/token.service';
            
            <!-- Hero Section -->
            <div class="text-center space-y-4">
-              <h1 class="text-5xl font-extrabold tracking-tight" style="color: var(--color-brand-main);">
+              <h1 class="text-5xl font-extrabold tracking-tight" style="color: var(--color-primary-main);">
                  Discover Our New Design System
               </h1>
               <p class="text-lg max-w-2xl mx-auto" style="color: var(--color-text-muted);">
@@ -37,11 +37,11 @@ import { TokenService } from '../services/token.service';
               </p>
               <div class="pt-4 space-x-4">
                  <button class="font-semibold transition-all hover:opacity-90 shadow-lg"
-                         style="background-color: var(--color-primary-500); color: var(--color-text-onPrimary); padding: var(--spacing-md) var(--spacing-xl); border-radius: var(--radii-full);">
+                         style="background-color: var(--color-primary-main); color: var(--color-text-onPrimary); padding: var(--spacing-md) var(--spacing-xl); border-radius: var(--radii-full);">
                     Get Started
                  </button>
                  <button class="font-semibold border-2 transition-all hover:bg-gray-50"
-                         style="border-color: var(--color-primary-500); color: var(--color-primary-500); padding: calc(var(--spacing-md) - 2px) var(--spacing-xl); border-radius: var(--radii-full);">
+                         style="border-color: var(--color-primary-main); color: var(--color-primary-main); padding: calc(var(--spacing-md) - 2px) var(--spacing-xl); border-radius: var(--radii-full);">
                     View Documentation
                  </button>
               </div>
@@ -49,19 +49,19 @@ import { TokenService } from '../services/token.service';
 
            <!-- Components Demo -->
            <div class="grid grid-cols-2 gap-8">
-              <!-- Card Component -->
-              <div class="shadow-xl overflow-hidden transition-transform hover:-translate-y-1"
-                   style="background-color: var(--color-background-DEFAULT); border-radius: var(--radii-md); border: 1px solid var(--color-background-muted);">
-                 <div class="h-32 w-full" style="background-color: var(--color-primary-500); opacity: 0.2;"></div>
-                 <div style="padding: var(--spacing-lg);">
-                    <h3 class="font-bold text-xl mb-2">Beautiful Components</h3>
-                    <p style="color: var(--color-text-muted); margin-bottom: var(--spacing-md);">Build interfaces faster than ever before with fully tokenized components.</p>
-                    <a href="#" class="font-medium inline-flex items-center" style="color: var(--color-primary-500);">
-                      Learn more
-                      <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                    </a>
-                 </div>
-              </div>
+               <!-- Card Component -->
+               <div class="shadow-xl overflow-hidden transition-transform hover:-translate-y-1"
+                    style="background-color: var(--color-background-DEFAULT); border-radius: var(--radii-md); border: 1px solid var(--color-background-muted);">
+                  <div class="h-32 w-full" style="background-color: var(--color-primary-main); opacity: 0.2;"></div>
+                  <div style="padding: var(--spacing-lg);">
+                     <h3 class="font-bold text-xl mb-2">Beautiful Components</h3>
+                     <p style="color: var(--color-text-muted); margin-bottom: var(--spacing-md);">Build interfaces faster than ever before with fully tokenized components.</p>
+                     <a href="#" class="font-medium inline-flex items-center" style="color: var(--color-primary-main);">
+                       Learn more
+                       <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                     </a>
+                  </div>
+               </div>
 
               <!-- Form Component -->
               <div class="shadow-xl"
@@ -78,10 +78,10 @@ import { TokenService } from '../services/token.service';
                        <textarea class="w-full border shadow-sm outline-none transition-colors" rows="3"
                                  style="border-radius: var(--radii-md); padding: var(--spacing-sm) var(--spacing-md); border-color: var(--color-background-muted);"></textarea>
                     </div>
-                    <button class="w-full font-semibold transition-all hover:opacity-90 shadow-md"
-                            style="background-color: var(--color-primary-500); color: var(--color-text-onPrimary); padding: var(--spacing-sm) var(--spacing-md); border-radius: var(--radii-md);">
-                       Send Message
-                    </button>
+                     <button class="w-full font-semibold transition-all hover:opacity-90 shadow-md"
+                             style="background-color: var(--color-primary-main); color: var(--color-text-onPrimary); padding: var(--spacing-sm) var(--spacing-md); border-radius: var(--radii-md);">
+                        Send Message
+                     </button>
                  </div>
               </div>
            </div>
@@ -90,8 +90,8 @@ import { TokenService } from '../services/token.service';
            <div class="mt-8">
               <h3 class="font-bold text-lg mb-4">Generated Primary Palette</h3>
               <div class="flex space-x-2">
-                 <div class="w-16 h-16 rounded shadow-inner" style="background-color: var(--color-primary-500);"></div>
-                 <div class="w-16 h-16 rounded shadow-inner" style="background-color: var(--color-primary-600);"></div>
+                 <div class="w-16 h-16 rounded shadow-inner flex items-center justify-center text-xs font-mono font-semibold text-white" style="background-color: var(--color-primary-main);">Main</div>
+                 <div class="w-16 h-16 rounded shadow-inner flex items-center justify-center text-xs font-mono font-semibold text-white" style="background-color: var(--color-primary-dark);">Dark</div>
               </div>
            </div>
            
