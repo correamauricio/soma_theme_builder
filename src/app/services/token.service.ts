@@ -10,63 +10,211 @@ export interface DesignToken {
 
 export interface FlatToken {
   path: string;
-  originalPath: string[]; // e.g. ['color', 'primary', '500']
+  originalPath: string[];
   value: string;
   resolvedValue: string;
   type: string;
+  sourceFile: string;
+}
+
+export interface TokenFile {
+  name: string;
+  content: any;
+}
+
+export interface VariantGroup {
+  id: string;
+  name: string;
+  files: string[];
+  activeFile: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class TokenService {
-  rawTokens = signal<any>({});
+  files = signal<TokenFile[]>([]);
+  activeFileName = signal<string>('semantics.json');
+  
   selectedTokenPath = signal<string[] | null>(null);
   isJsonEditorOpen = signal<boolean>(true);
+  duplicateTokensInfo = signal<string[]>([]);
   
-  // Computed flat token list for easy rendering and CSS variable generation
-  flatTokens = computed(() => {
-    const raw = this.rawTokens();
-    if (!raw) return [];
-    
-    const flatMap = new Map<string, FlatToken>();
-    
-    const extractTokens = (obj: any, path: string[]) => {
-      if (!obj || typeof obj !== 'object') return;
-      
-      // Is it a token? (W3C standard says it has $value or value)
-      if (obj.$value !== undefined || obj.value !== undefined) {
-        const value = String(obj.$value !== undefined ? obj.$value : obj.value);
-        const type = String(obj.$type !== undefined ? obj.$type : (obj.type || 'unknown'));
-        
-        const pathStr = path.join('.');
-        flatMap.set(pathStr, {
-          path: pathStr,
-          originalPath: path,
-          value,
-          resolvedValue: value, // will resolve later
-          type
-        });
-      } else {
-        // It's a group, iterate keys
-        for (const key of Object.keys(obj)) {
-          if (!key.startsWith('$') && !key.startsWith('@')) {
-             extractTokens(obj[key], [...path, key]);
+  // Mapa de grupoId -> nomeDoArquivoAtivo
+  selectedVariants = signal<Record<string, string>>({});
+  // Arquivos desativados manualmente
+  disabledFileNames = signal<Set<string>>(new Set());
+  
+  rawTokens = computed(() => {
+    const activeName = this.activeFileName();
+    const file = this.files().find(f => f.name === activeName);
+    return file ? file.content : {};
+  });
+
+  // Extrai os caminhos de tokens de cada arquivo individualmente
+  private fileTokenPaths = computed(() => {
+    const allFiles = this.files();
+    const map = new Map<string, { paths: Set<string>; tokens: FlatToken[] }>();
+
+    for (const file of allFiles) {
+      const paths = new Set<string>();
+      const tokens: FlatToken[] = [];
+
+      const extract = (obj: any, path: string[]) => {
+        if (!obj || typeof obj !== 'object') return;
+        if (obj.$value !== undefined || obj.value !== undefined) {
+          const value = String(obj.$value !== undefined ? obj.$value : obj.value);
+          const type = String(obj.$type !== undefined ? obj.$type : (obj.type || 'unknown'));
+          const pathStr = path.join('.');
+          paths.add(pathStr);
+          tokens.push({
+            path: pathStr,
+            originalPath: path,
+            value,
+            resolvedValue: value,
+            type,
+            sourceFile: file.name
+          });
+        } else {
+          for (const key of Object.keys(obj)) {
+            if (!key.startsWith('$') && !key.startsWith('@')) {
+              extract(obj[key], [...path, key]);
+            }
           }
         }
-      }
+      };
+
+      extract(file.content, []);
+      map.set(file.name, { paths, tokens });
+    }
+
+    return map;
+  });
+
+  // Identifica automaticamente grupos de variantes (arquivos que disputam os mesmos tokens)
+  variantGroups = computed(() => {
+    const fileMap = this.fileTokenPaths();
+    const fileNames = Array.from(fileMap.keys());
+    if (fileNames.length <= 1) return [];
+
+    // Grafo de adjacência de colisões
+    const parent: Record<string, string> = {};
+    fileNames.forEach(f => parent[f] = f);
+
+    const find = (i: string): string => {
+      if (parent[i] === i) return i;
+      return parent[i] = find(parent[i]);
     };
+
+    const union = (i: string, j: string) => {
+      const rootI = find(i);
+      const rootJ = find(j);
+      if (rootI !== rootJ) parent[rootI] = rootJ;
+    };
+
+    // Une arquivos que compartilham pelo menos 1 token
+    for (let i = 0; i < fileNames.length; i++) {
+      for (let j = i + 1; j < fileNames.length; j++) {
+        const f1 = fileNames[i];
+        const f2 = fileNames[j];
+        const paths1 = fileMap.get(f1)?.paths || new Set();
+        const paths2 = fileMap.get(f2)?.paths || new Set();
+
+        let hasOverlap = false;
+        for (const p of paths1) {
+          if (paths2.has(p)) {
+            hasOverlap = true;
+            break;
+          }
+        }
+
+        if (hasOverlap) {
+          union(f1, f2);
+        }
+      }
+    }
+
+    // Agrupa por componente raiz
+    const clusters: Record<string, string[]> = {};
+    fileNames.forEach(f => {
+      const root = find(f);
+      if (!clusters[root]) clusters[root] = [];
+      clusters[root].push(f);
+    });
+
+    const groups: VariantGroup[] = [];
+    const selections = this.selectedVariants();
+    let index = 1;
+
+    for (const root of Object.keys(clusters)) {
+      const members = clusters[root];
+      if (members.length > 1) {
+        const groupId = `group-${index++}`;
+        const selected = selections[groupId] || members[0];
+        groups.push({
+          id: groupId,
+          name: `Variante ${index - 1}`,
+          files: members,
+          activeFile: selected
+        });
+      }
+    }
+
+    return groups;
+  });
+
+  // Computa a lista final de arquivos ativos (Base + Ativos dos Grupos de Variantes)
+  activeFiles = computed(() => {
+    const allFiles = this.files();
+    const groups = this.variantGroups();
+    const disabled = this.disabledFileNames();
     
-    extractTokens(raw, []);
-    
-    // Resolve aliases
+    // Arquivos que pertencem a algum grupo de variantes
+    const variantFileNames = new Set<string>();
+    const selectedVariantFiles = new Set<string>();
+
+    for (const group of groups) {
+      group.files.forEach(f => variantFileNames.add(f));
+      if (group.activeFile) {
+        selectedVariantFiles.add(group.activeFile);
+      }
+    }
+
+    return allFiles.filter(f => {
+      if (disabled.has(f.name)) return false;
+      // Se é um arquivo de variante, só inclui se for o ativo do grupo
+      if (variantFileNames.has(f.name)) {
+        return selectedVariantFiles.has(f.name);
+      }
+      // Se não é variante, é arquivo base (sempre ativo se não desativado)
+      return true;
+    });
+  });
+
+  allFlatTokens = computed(() => {
+    const activeFileList = this.activeFiles();
+    const fileMap = this.fileTokenPaths();
+    const flatMap = new Map<string, FlatToken>();
+    const duplicates: string[] = [];
+
+    for (const file of activeFileList) {
+      const fileData = fileMap.get(file.name);
+      if (!fileData) continue;
+
+      for (const t of fileData.tokens) {
+        // Se já existe, sobrepõe (comportamento de camada/overlay de tema)
+        flatMap.set(t.path, {
+          ...t,
+          sourceFile: file.name
+        });
+      }
+    }
+
     const resolveAlias = (val: string, visited: Set<string>): string => {
-      // First check for direct full match e.g. "{color.primary}"
       const aliasMatch = val.match(/^\{([^}]+)\}$/);
       if (aliasMatch) {
         const aliasPath = aliasMatch[1];
         if (visited.has(aliasPath)) {
-          console.warn(`Circular dependency detected: ${aliasPath}`);
           return val;
         }
         
@@ -77,10 +225,8 @@ export class TokenService {
         }
       }
       
-      // Then check for composite values e.g. "1px solid {color.border}"
       return val.replace(/\{([^}]+)\}/g, (match, path) => {
          if (visited.has(path)) {
-           console.warn(`Circular dependency detected: ${path}`);
            return match;
          }
          const referencedToken = flatMap.get(path);
@@ -88,25 +234,32 @@ export class TokenService {
            visited.add(path);
            return resolveAlias(referencedToken.value, visited);
          }
-         return match; // unresolved
+         return match;
       });
     };
-    
+
     const resolvedTokens = Array.from(flatMap.values()).map(t => {
        return {
          ...t,
          resolvedValue: resolveAlias(t.value, new Set<string>())
        };
     });
-    
+
+    setTimeout(() => {
+       this.duplicateTokensInfo.set(duplicates);
+    }, 0);
+
     return resolvedTokens;
   });
 
-  // Generate CSS Variables string
+  flatTokens = computed(() => {
+     const activeName = this.activeFileName();
+     return this.allFlatTokens().filter(t => t.sourceFile === activeName);
+  });
+
   cssVariables = computed(() => {
      let css = ':root {\n';
-     for (const t of this.flatTokens()) {
-        // Replace dots and spaces with hyphens to create valid CSS custom properties
+     for (const t of this.allFlatTokens()) {
         const cssVarName = `--${t.path.replace(/\./g, '-')}`;
         css += `  ${cssVarName}: ${t.resolvedValue};\n`;
      }
@@ -114,7 +267,6 @@ export class TokenService {
      return css;
   });
 
-  // Group tokens for tree view
   groupedTokens = computed(() => {
      const flat = this.flatTokens();
      const tree: any = {};
@@ -139,23 +291,17 @@ export class TokenService {
   }
 
   loadPreset() {
-    this.rawTokens.set({
+    const primitives = {
       color: {
-        primary: {
+        blue: {
           500: { $value: "#3b82f6", $type: "color" },
           600: { $value: "#2563eb", $type: "color" }
         },
-        brand: {
-          main: { $value: "{color.primary.500}", $type: "color" }
-        },
-        background: {
-          DEFAULT: { $value: "#ffffff", $type: "color" },
-          muted: { $value: "#f3f4f6", $type: "color" }
-        },
-        text: {
-          main: { $value: "#111827", $type: "color" },
-          muted: { $value: "#6b7280", $type: "color" },
-          onPrimary: { $value: "#ffffff", $type: "color" }
+        white: { $value: "#ffffff", $type: "color" },
+        gray: {
+          100: { $value: "#f3f4f6", $type: "color" },
+          500: { $value: "#6b7280", $type: "color" },
+          900: { $value: "#111827", $type: "color" }
         }
       },
       spacing: {
@@ -173,12 +319,76 @@ export class TokenService {
           sans: { $value: "Inter, sans-serif", $type: "fontFamily" }
         }
       }
+    };
+
+    const semantics = {
+      color: {
+        primary: {
+          main: { $value: "{color.blue.500}", $type: "color" },
+          dark: { $value: "{color.blue.600}", $type: "color" }
+        },
+        background: {
+          DEFAULT: { $value: "{color.white}", $type: "color" },
+          muted: { $value: "{color.gray.100}", $type: "color" }
+        },
+        text: {
+          main: { $value: "{color.gray.900}", $type: "color" },
+          muted: { $value: "{color.gray.500}", $type: "color" },
+          onPrimary: { $value: "{color.white}", $type: "color" }
+        }
+      }
+    };
+
+    const semanticsDark = {
+      color: {
+        background: {
+          DEFAULT: { $value: "{color.gray.900}", $type: "color" },
+          muted: { $value: "{color.gray.900}", $type: "color" }
+        },
+        text: {
+          main: { $value: "{color.white}", $type: "color" },
+          muted: { $value: "{color.gray.400}", $type: "color" },
+          onPrimary: { $value: "{color.white}", $type: "color" }
+        }
+      }
+    };
+    
+    this.files.set([
+      { name: 'primitives.json', content: primitives },
+      { name: 'semantics.json', content: semantics },
+      { name: 'semantics-dark.json', content: semanticsDark }
+    ]);
+    this.activeFileName.set('semantics.json');
+  }
+
+  selectVariant(groupId: string, fileName: string) {
+    this.selectedVariants.update(prev => ({
+      ...prev,
+      [groupId]: fileName
+    }));
+  }
+
+  toggleFileDisabled(fileName: string) {
+    this.disabledFileNames.update(prev => {
+      const next = new Set(prev);
+      if (next.has(fileName)) {
+        next.delete(fileName);
+      } else {
+        next.add(fileName);
+      }
+      return next;
     });
   }
   
   updateTokenValue(path: string[], newValue: string) {
-    const current = JSON.parse(JSON.stringify(this.rawTokens()));
-    let obj = current;
+    const activeName = this.activeFileName();
+    const currentFiles = this.files();
+    const fileIndex = currentFiles.findIndex(f => f.name === activeName);
+    
+    if (fileIndex === -1) return;
+    
+    const fileContent = JSON.parse(JSON.stringify(currentFiles[fileIndex].content));
+    let obj = fileContent;
     for (let i = 0; i < path.length - 1; i++) {
        if (!obj[path[i]]) obj[path[i]] = {};
        obj = obj[path[i]];
@@ -194,24 +404,35 @@ export class TokenService {
        obj[lastKey] = { $value: newValue };
     }
     
-    this.rawTokens.set(current);
+    const newFiles = [...currentFiles];
+    newFiles[fileIndex] = { ...newFiles[fileIndex], content: fileContent };
+    this.files.set(newFiles);
   }
 
-  mergeTokens(newTokens: any) {
-    const current = JSON.parse(JSON.stringify(this.rawTokens()));
+  updateActiveFileContent(newContent: any) {
+    const activeName = this.activeFileName();
+    const currentFiles = this.files();
+    const fileIndex = currentFiles.findIndex(f => f.name === activeName);
+    if (fileIndex === -1) return;
     
-    const deepMerge = (target: any, source: any) => {
-       for (const key of Object.keys(source)) {
-          if (source[key] instanceof Object && key in target) {
-             Object.assign(source[key], deepMerge(target[key], source[key]));
-          } else {
-             target[key] = source[key];
-          }
-       }
-       return target;
-    };
+    const newFiles = [...currentFiles];
+    newFiles[fileIndex] = { ...newFiles[fileIndex], content: newContent };
+    this.files.set(newFiles);
+  }
+
+  addFile(name: string, newTokens: any) {
+    const currentFiles = this.files();
     
-    const merged = deepMerge(current, newTokens);
-    this.rawTokens.set(merged);
+    const existingIndex = currentFiles.findIndex(f => f.name === name);
+    if (existingIndex >= 0) {
+       const newFiles = [...currentFiles];
+       newFiles[existingIndex] = { name, content: newTokens };
+       this.files.set(newFiles);
+    } else {
+       this.files.set([...currentFiles, { name, content: newTokens }]);
+    }
+    
+    this.activeFileName.set(name);
   }
 }
+
