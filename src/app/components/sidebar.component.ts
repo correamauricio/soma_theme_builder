@@ -1,7 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TokenService, FlatToken } from '../services/token.service';
+import { TokenService } from '../services/token.service';
+import { FlatToken } from '../models/token.model';
 import { AliasAutocompleteComponent } from './alias-autocomplete.component';
 
 @Component({
@@ -17,7 +18,7 @@ import { AliasAutocompleteComponent } from './alias-autocomplete.component';
         </div>
         
         <button 
-          (click)="tokenService.isJsonEditorOpen.update(v => !v)"
+          (click)="tokenService.toggleJsonEditor()"
           [title]="tokenService.isJsonEditorOpen() ? 'Hide Raw JSON Editor' : 'Show Raw JSON Editor'"
           class="flex items-center space-x-1.5 px-2 py-1 rounded text-xs font-mono transition-all duration-200 border cursor-pointer"
           [class.bg-blue-600]="tokenService.isJsonEditorOpen()"
@@ -106,7 +107,7 @@ export class SidebarComponent {
   tokenService = inject(TokenService);
 
   onFileSelect(fileName: string) {
-    this.tokenService.activeFileName.set(fileName);
+    this.tokenService.setActiveFileName(fileName);
   }
 
   getKeys(node: any) {
@@ -124,7 +125,7 @@ export class SidebarComponent {
   }
   
   selectToken(node: any, key: string) {
-    this.tokenService.selectedTokenPath.set(node[key]._token.originalPath);
+    this.tokenService.setSelectedTokenPath(node[key]._token.originalPath);
   }
 
   updateToken(node: any, key: string, val: string) {

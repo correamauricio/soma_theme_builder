@@ -1,7 +1,8 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TokenService, FlatToken } from '../services/token.service';
+import { TokenService } from '../services/token.service';
+import { FlatToken } from '../models/token.model';
 
 @Component({
   selector: 'app-alias-autocomplete',

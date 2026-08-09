@@ -1,49 +1,32 @@
 import { Injectable, signal, computed } from '@angular/core';
-
-export interface DesignToken {
-  $value?: string | number;
-  value?: string | number;
-  $type?: string;
-  type?: string;
-  [key: string]: any;
-}
-
-export interface FlatToken {
-  path: string;
-  originalPath: string[];
-  value: string;
-  resolvedValue: string;
-  type: string;
-  sourceFile: string;
-}
-
-export interface TokenFile {
-  name: string;
-  content: any;
-}
-
-export interface VariantGroup {
-  id: string;
-  name: string;
-  files: string[];
-  activeFile: string;
-}
+import { DesignToken, FlatToken, TokenFile, VariantGroup } from '../models/token.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TokenService {
-  files = signal<TokenFile[]>([]);
-  activeFileName = signal<string>('semantics.json');
+  private _files = signal<TokenFile[]>([]);
+  files = this._files.asReadonly();
   
-  selectedTokenPath = signal<string[] | null>(null);
-  isJsonEditorOpen = signal<boolean>(true);
-  duplicateTokensInfo = signal<string[]>([]);
+  private _activeFileName = signal<string>('semantics.json');
+  activeFileName = this._activeFileName.asReadonly();
+  
+  private _selectedTokenPath = signal<string[] | null>(null);
+  selectedTokenPath = this._selectedTokenPath.asReadonly();
+  
+  private _isJsonEditorOpen = signal<boolean>(true);
+  isJsonEditorOpen = this._isJsonEditorOpen.asReadonly();
+  
+  private _duplicateTokensInfo = signal<string[]>([]);
+  duplicateTokensInfo = this._duplicateTokensInfo.asReadonly();
   
   // Mapa de grupoId -> nomeDoArquivoAtivo
-  selectedVariants = signal<Record<string, string>>({});
+  private _selectedVariants = signal<Record<string, string>>({});
+  selectedVariants = this._selectedVariants.asReadonly();
+  
   // Arquivos desativados manualmente
-  disabledFileNames = signal<Set<string>>(new Set());
+  private _disabledFileNames = signal<Set<string>>(new Set());
+  disabledFileNames = this._disabledFileNames.asReadonly();
   
   rawTokens = computed(() => {
     const activeName = this.activeFileName();
@@ -246,7 +229,7 @@ export class TokenService {
     });
 
     setTimeout(() => {
-       this.duplicateTokensInfo.set(duplicates);
+       this._duplicateTokensInfo.set(duplicates);
     }, 0);
 
     return resolvedTokens;
@@ -353,23 +336,23 @@ export class TokenService {
       }
     };
     
-    this.files.set([
+    this._files.set([
       { name: 'primitives.json', content: primitives },
       { name: 'semantics.json', content: semantics },
       { name: 'semantics-dark.json', content: semanticsDark }
     ]);
-    this.activeFileName.set('semantics.json');
+    this._activeFileName.set('semantics.json');
   }
 
   selectVariant(groupId: string, fileName: string) {
-    this.selectedVariants.update(prev => ({
+    this._selectedVariants.update(prev => ({
       ...prev,
       [groupId]: fileName
     }));
   }
 
   toggleFileDisabled(fileName: string) {
-    this.disabledFileNames.update(prev => {
+    this._disabledFileNames.update(prev => {
       const next = new Set(prev);
       if (next.has(fileName)) {
         next.delete(fileName);
@@ -406,7 +389,7 @@ export class TokenService {
     
     const newFiles = [...currentFiles];
     newFiles[fileIndex] = { ...newFiles[fileIndex], content: fileContent };
-    this.files.set(newFiles);
+    this._files.set(newFiles);
   }
 
   updateActiveFileContent(newContent: any) {
@@ -417,7 +400,7 @@ export class TokenService {
     
     const newFiles = [...currentFiles];
     newFiles[fileIndex] = { ...newFiles[fileIndex], content: newContent };
-    this.files.set(newFiles);
+    this._files.set(newFiles);
   }
 
   addFile(name: string, newTokens: any) {
@@ -427,12 +410,29 @@ export class TokenService {
     if (existingIndex >= 0) {
        const newFiles = [...currentFiles];
        newFiles[existingIndex] = { name, content: newTokens };
-       this.files.set(newFiles);
+       this._files.set(newFiles);
     } else {
-       this.files.set([...currentFiles, { name, content: newTokens }]);
+       this._files.set([...currentFiles, { name, content: newTokens }]);
     }
     
-    this.activeFileName.set(name);
+    this._activeFileName.set(name);
+  }
+
+  // State Mutation Methods for External Use
+  toggleJsonEditor() {
+    this._isJsonEditorOpen.update(v => !v);
+  }
+
+  setJsonEditorOpen(isOpen: boolean) {
+    this._isJsonEditorOpen.set(isOpen);
+  }
+
+  setActiveFileName(name: string) {
+    this._activeFileName.set(name);
+  }
+
+  setSelectedTokenPath(path: string[] | null) {
+    this._selectedTokenPath.set(path);
   }
 }
 

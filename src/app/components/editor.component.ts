@@ -20,7 +20,7 @@ import { TokenService } from '../services/token.service';
             <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
             <span>Raw JSON</span>
           </div>
-          <button class="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-800 transition-colors" (click)="tokenService.isJsonEditorOpen.set(false)" title="Hide JSON Editor">
+          <button class="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-800 transition-colors" (click)="tokenService.setJsonEditorOpen(false)" title="Hide JSON Editor">
              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
