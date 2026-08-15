@@ -3,6 +3,7 @@ import { HeaderComponent } from './components/header.component';
 import { SidebarComponent } from './components/sidebar.component';
 import { EditorComponent } from './components/editor.component';
 import { PreviewComponent } from './components/preview.component';
+import { ShortcutService } from './services/shortcut.service';
 
 @Component({
   selector: 'app-root',
@@ -20,4 +21,8 @@ import { PreviewComponent } from './components/preview.component';
   `,
   styles: []
 })
-export class App {}
+export class App {
+  constructor(shortcutService: ShortcutService) {
+    shortcutService.init();
+  }
+}
