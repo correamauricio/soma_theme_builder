@@ -1,6 +1,6 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { TokenStateService } from './token-state.service';
-import { extractFileTokenPaths, resolveAllFlatTokens, buildGroupedTokens } from '../utils/token-parser.util';
+import { extractFileTokenPaths, resolveAllFlatTokens, resolveFileFlatTokens, buildGroupedTokens } from '../utils/token-parser.util';
 import { detectVariantGroups, computeActiveFiles } from '../utils/variant-detection.util';
 import { generateCssVariables } from '../utils/css-generator.util';
 import { HistoryService } from './history.service';
@@ -55,7 +55,8 @@ export class TokenService {
 
   flatTokens = computed(() => {
      const activeName = this.activeFileName();
-     return this.allFlatTokens().filter(t => t.sourceFile === activeName);
+     const fileTokens = this.fileTokenPaths().get(activeName)?.tokens || [];
+     return resolveFileFlatTokens(fileTokens, this.allFlatTokens());
   });
 
   cssVariables = computed(() => {
