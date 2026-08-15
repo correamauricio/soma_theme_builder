@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { TokenFile } from '../models/token.model';
+import { TokenStateMemento } from '../models/history.model';
 
 @Injectable({
   providedIn: 'root'
@@ -193,5 +194,20 @@ export class TokenStateService {
 
   setSelectedTokenPath(path: string[] | null) {
     this._selectedTokenPath.set(path);
+  }
+
+  createMemento(): TokenStateMemento {
+    return {
+      // Deep copy files to ensure memento is truly isolated from future mutations
+      files: JSON.parse(JSON.stringify(this.files())),
+      selectedVariants: { ...this.selectedVariants() },
+      disabledFileNames: Array.from(this.disabledFileNames())
+    };
+  }
+
+  restoreMemento(memento: TokenStateMemento) {
+    this._files.set(JSON.parse(JSON.stringify(memento.files))); // Deep copy again just to be safe
+    this._selectedVariants.set({ ...memento.selectedVariants });
+    this._disabledFileNames.set(new Set(memento.disabledFileNames));
   }
 }
