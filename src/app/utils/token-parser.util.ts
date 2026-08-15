@@ -38,6 +38,38 @@ export function extractFileTokenPaths(files: TokenFile[]): Map<string, { paths: 
   return map;
 }
 
+export function createAliasResolver(tokenMap: Map<string, { value: string }>) {
+  const resolveAlias = (val: string, visited: Set<string>): string => {
+    const aliasMatch = val.match(/^\{([^}]+)\}$/);
+    if (aliasMatch) {
+      const aliasPath = aliasMatch[1];
+      if (visited.has(aliasPath)) {
+        return val;
+      }
+      
+      const referencedToken = tokenMap.get(aliasPath);
+      if (referencedToken) {
+         visited.add(aliasPath);
+         return resolveAlias(referencedToken.value, visited);
+      }
+    }
+    
+    return val.replace(/\{([^}]+)\}/g, (match, path) => {
+       if (visited.has(path)) {
+         return match;
+       }
+       const referencedToken = tokenMap.get(path);
+       if (referencedToken) {
+         visited.add(path);
+         return resolveAlias(referencedToken.value, visited);
+       }
+       return match;
+    });
+  };
+
+  return resolveAlias;
+}
+
 export function resolveAllFlatTokens(
   activeFileList: TokenFile[], 
   fileMap: Map<string, { paths: Set<string>; tokens: FlatToken[] }>,
@@ -51,6 +83,10 @@ export function resolveAllFlatTokens(
     if (!fileData) continue;
 
     for (const t of fileData.tokens) {
+      if (flatMap.has(t.path)) {
+        const existing = flatMap.get(t.path)!;
+        duplicates.push(`Token "${t.path}" definido em "${existing.sourceFile}" foi sobrescrito por "${file.name}"`);
+      }
       flatMap.set(t.path, {
         ...t,
         sourceFile: file.name
@@ -58,33 +94,7 @@ export function resolveAllFlatTokens(
     }
   }
 
-  const resolveAlias = (val: string, visited: Set<string>): string => {
-    const aliasMatch = val.match(/^\{([^}]+)\}$/);
-    if (aliasMatch) {
-      const aliasPath = aliasMatch[1];
-      if (visited.has(aliasPath)) {
-        return val;
-      }
-      
-      const referencedToken = flatMap.get(aliasPath);
-      if (referencedToken) {
-         visited.add(aliasPath);
-         return resolveAlias(referencedToken.value, visited);
-      }
-    }
-    
-    return val.replace(/\{([^}]+)\}/g, (match, path) => {
-       if (visited.has(path)) {
-         return match;
-       }
-       const referencedToken = flatMap.get(path);
-       if (referencedToken) {
-         visited.add(path);
-         return resolveAlias(referencedToken.value, visited);
-       }
-       return match;
-    });
-  };
+  const resolveAlias = createAliasResolver(flatMap);
 
   const resolvedTokens = Array.from(flatMap.values()).map(t => {
      return {
@@ -96,6 +106,26 @@ export function resolveAllFlatTokens(
   onDuplicatesFound(duplicates);
 
   return resolvedTokens;
+}
+
+export function resolveFileFlatTokens(
+  fileTokens: FlatToken[],
+  contextTokens: FlatToken[]
+): FlatToken[] {
+  const lookupMap = new Map<string, FlatToken>();
+  for (const t of contextTokens) {
+    lookupMap.set(t.path, t);
+  }
+  for (const t of fileTokens) {
+    lookupMap.set(t.path, t);
+  }
+
+  const resolveAlias = createAliasResolver(lookupMap);
+
+  return fileTokens.map(t => ({
+    ...t,
+    resolvedValue: resolveAlias(t.value, new Set<string>())
+  }));
 }
 
 export function buildGroupedTokens(flatTokens: FlatToken[]): any {
