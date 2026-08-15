@@ -3,12 +3,15 @@ import { TokenStateService } from './token-state.service';
 import { extractFileTokenPaths, resolveAllFlatTokens, buildGroupedTokens } from '../utils/token-parser.util';
 import { detectVariantGroups, computeActiveFiles } from '../utils/variant-detection.util';
 import { generateCssVariables } from '../utils/css-generator.util';
+import { HistoryService } from './history.service';
+import { StateChangeCommand } from '../commands/state-change.command';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TokenService {
   private state = inject(TokenStateService);
+  private history = inject(HistoryService);
 
   // Expose state as read-only from the state service
   files = this.state.files;
@@ -63,25 +66,40 @@ export class TokenService {
      return buildGroupedTokens(this.flatTokens());
   });
 
-  // Facade Methods for Mutations (delegating to TokenStateService)
+  // Facade Methods for Mutations (delegating to TokenStateService and HistoryService)
   selectVariant(groupId: string, fileName: string) {
-    this.state.selectVariant(groupId, fileName);
+    const command = new StateChangeCommand(this.state, () => {
+      this.state.selectVariant(groupId, fileName);
+    });
+    this.history.execute(command);
   }
 
   toggleFileDisabled(fileName: string) {
-    this.state.toggleFileDisabled(fileName);
+    const command = new StateChangeCommand(this.state, () => {
+      this.state.toggleFileDisabled(fileName);
+    });
+    this.history.execute(command);
   }
 
   updateTokenValue(path: string[], newValue: string) {
-    this.state.updateTokenValue(path, newValue);
+    const command = new StateChangeCommand(this.state, () => {
+      this.state.updateTokenValue(path, newValue);
+    });
+    this.history.execute(command);
   }
 
   updateActiveFileContent(newContent: any) {
-    this.state.updateActiveFileContent(newContent);
+    const command = new StateChangeCommand(this.state, () => {
+      this.state.updateActiveFileContent(newContent);
+    });
+    this.history.execute(command);
   }
 
   addFile(name: string, newTokens: any) {
-    this.state.addFile(name, newTokens);
+    const command = new StateChangeCommand(this.state, () => {
+      this.state.addFile(name, newTokens);
+    });
+    this.history.execute(command);
   }
 
   toggleJsonEditor() {
