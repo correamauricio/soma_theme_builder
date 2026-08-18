@@ -97,18 +97,50 @@ export class AliasAutocompleteComponent {
     const query = this.filterQuery().toLowerCase().trim();
     const current = this.currentPath;
 
-    const available = all.filter(t => t.path !== current);
+    const expandedTokens: any[] = [];
+    for (const t of all) {
+      if (t.path === current) continue;
+      
+      expandedTokens.push({
+        path: t.path,
+        type: t.type,
+        resolvedValue: t.resolvedValue,
+        sourceFile: t.sourceFile,
+        isSubMember: false
+      });
+
+      if (t.value && typeof t.value === 'object' && !Array.isArray(t.value)) {
+        const explore = (obj: any, prefix: string) => {
+          for (const key of Object.keys(obj)) {
+            const val = obj[key];
+            const subPath = `${prefix}.${key}`;
+            if (val && typeof val === 'object' && !Array.isArray(val)) {
+              explore(val, subPath);
+            } else {
+              expandedTokens.push({
+                path: subPath,
+                type: 'sub-prop',
+                resolvedValue: val,
+                sourceFile: t.sourceFile,
+                isSubMember: true
+              });
+            }
+          }
+        };
+        explore(t.value, t.path);
+      }
+    }
 
     if (!query) {
-      return available.slice(0, 15);
+      return expandedTokens.slice(0, 15);
     }
 
     const cleanQuery = query.replace(/^\{|\}$/g, '');
 
-    return available.filter(t => {
+    return expandedTokens.filter(t => {
       const matchPath = t.path.toLowerCase().includes(cleanQuery);
       const matchAlias = (`{${t.path.toLowerCase()}}`).includes(query);
-      const matchValue = String(t.value).toLowerCase().includes(cleanQuery);
+      const matchValue = String(t.resolvedValue).toLowerCase().includes(cleanQuery);
       return matchPath || matchAlias || matchValue;
     }).slice(0, 15);
   });
@@ -138,7 +170,7 @@ export class AliasAutocompleteComponent {
     this.filterQuery.set(val);
   }
 
-  selectToken(token: FlatToken) {
+  selectToken(token: any) {
     const aliasValue = `{${token.path}}`;
     this.value = aliasValue;
     this.valueChange.emit(aliasValue);

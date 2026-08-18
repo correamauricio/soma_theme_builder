@@ -31,7 +31,7 @@ describe('TokenService Variant Behavior', () => {
       expect(service.activeFileName()).toBe('semantics.json');
       // Tokens list must NOT disappear
       expect(service.flatTokens().length).toBe(initialCount);
-      expect(service.groupedTokens().color).toBeDefined();
+      expect(service.groupedTokens()['color']).toBeDefined();
     });
   });
 });
