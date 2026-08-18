@@ -77,7 +77,39 @@ describe('Token Parser & Variant Resolution', () => {
     expect(viewedPrimary?.sourceFile).toBe('semantics.json');
 
     const grouped = buildGroupedTokens(resolvedViewedTokens);
-    expect(grouped.color.primary.main._token).toBeDefined();
-    expect(grouped.color.background.DEFAULT._token).toBeDefined();
+    expect(grouped['color']?.['primary']?.['main']?._token).toBeDefined();
+    expect(grouped['color']?.['background']?.['DEFAULT']?._token).toBeDefined();
+  });
+
+  describe('buildGroupedTokens', () => {
+    it('should build hierarchical tree from flat tokens', () => {
+      const flatTokens = [
+        {
+          path: 'spacing.sm',
+          originalPath: ['spacing', 'sm'],
+          value: '4px',
+          resolvedValue: '4px',
+          type: 'dimension',
+          sourceFile: 'tokens.json'
+        },
+        {
+          path: 'spacing.md',
+          originalPath: ['spacing', 'md'],
+          value: '8px',
+          resolvedValue: '8px',
+          type: 'dimension',
+          sourceFile: 'tokens.json'
+        }
+      ];
+
+      const result = buildGroupedTokens(flatTokens);
+      expect(result['spacing']?.['sm']?._token).toEqual(flatTokens[0]);
+      expect(result['spacing']?.['md']?._token).toEqual(flatTokens[1]);
+    });
+
+    it('should handle empty token list gracefully', () => {
+      const result = buildGroupedTokens([]);
+      expect(result).toEqual({});
+    });
   });
 });
