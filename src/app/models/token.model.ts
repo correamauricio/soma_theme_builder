@@ -9,9 +9,12 @@ export interface DesignToken {
 export interface FlatToken {
   path: string;
   originalPath: string[];
-  value: string;
-  resolvedValue: string;
+  value: any;
+  resolvedValue: any;
   type: string;
+  originalType?: string;
+  description?: string;
+  extensions?: any;
   sourceFile: string;
 }
 
@@ -25,4 +28,9 @@ export interface VariantGroup {
   name: string;
   files: string[];
   activeFile: string;
+}
+
+export interface GroupedTokenNode {
+  _token?: FlatToken;
+  [key: string]: GroupedTokenNode | any;
 }
