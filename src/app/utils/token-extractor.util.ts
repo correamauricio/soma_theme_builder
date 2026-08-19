@@ -35,12 +35,12 @@ function extractTokensFromFile(file: TokenFile): ExtractedFileTokens {
 
     const explicitType = tokenNode['$type'] ?? tokenNode['type'];
     const currentGroupType = explicitType ?? inheritedType;
-    const isToken = tokenNode['$value'] !== undefined || tokenNode['value'] !== undefined;
+    const isToken = tokenNode['$value'] !== undefined || tokenNode['value'] !== undefined || tokenNode['val'] !== undefined;
 
     if (isToken) {
-      const value = tokenNode['$value'] ?? tokenNode['value'];
+      const value = tokenNode['$value'] ?? tokenNode['value'] ?? tokenNode['val'];
       const tokenType = explicitType ?? inheritedType ?? inferTokenType(value);
-      const tokenPath = currentPath.join('.');
+      const tokenPath = typeof tokenNode['path'] === 'string' ? tokenNode['path'] : currentPath.join('.');
 
       paths.add(tokenPath);
       tokens.push({
