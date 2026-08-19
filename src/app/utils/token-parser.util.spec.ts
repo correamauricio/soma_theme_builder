@@ -111,5 +111,31 @@ describe('Token Parser & Variant Resolution', () => {
       const result = buildGroupedTokens([]);
       expect(result).toEqual({});
     });
+
+    it('should preserve both parent token and nested child tokens when a path collides with a group name', () => {
+      const flatTokens = [
+        {
+          path: 'color.blue',
+          originalPath: ['color', 'blue'],
+          value: '#0000ff',
+          resolvedValue: '#0000ff',
+          type: 'color',
+          sourceFile: 'tokens.json'
+        },
+        {
+          path: 'color.blue.500',
+          originalPath: ['color', 'blue', '500'],
+          value: '#0000aa',
+          resolvedValue: '#0000aa',
+          type: 'color',
+          sourceFile: 'tokens.json'
+        }
+      ];
+
+      const result = buildGroupedTokens(flatTokens);
+      
+      expect(result['color']?.['blue']?._token).toBeDefined();
+      expect(result['color']?.['blue']?.['500']?._token).toBeDefined();
+    });
   });
 });
