@@ -13,7 +13,7 @@ import { AliasAutocompleteComponent } from '../alias-autocomplete.component';
         class="flex-1"
         [value]="getValueString()"
         [currentPath]="token.path"
-        (valueChange)="onValueChange($event)"
+        (valueCommit)="onValueCommit($event)"
       ></app-alias-autocomplete>
     </div>
   `
@@ -28,7 +28,7 @@ export class PrimitiveNodeComponent {
     return String(this.token.value);
   }
 
-  onValueChange(val: string) {
+  onValueCommit(val: string) {
     // Attempt to keep numbers as numbers if it wasn't an alias
     let finalVal: any = val;
     if (!isNaN(Number(val)) && val.trim() !== '') {
