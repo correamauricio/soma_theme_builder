@@ -1,7 +1,8 @@
 const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 const RGB_HSL_COLOR_REGEX = /^(rgba?|hsla?)\(/;
-const DIMENSION_REGEX = /\b(px|rem|em|vw|vh|%)\b$/;
-const DURATION_REGEX = /^[0-9.]+ms$/;
+const MODERN_COLOR_REGEX = /^(oklch|color|lab|lch)\(/;
+const DIMENSION_REGEX = /^-?[0-9.]+(px|rem|em|vw|vh|vmin|vmax|%)$/;
+const DURATION_REGEX = /^[0-9.]+(ms|s)$/;
 
 export function inferTokenType(tokenValue: any): string {
   if (tokenValue == null) return 'unknown';
@@ -10,6 +11,7 @@ export function inferTokenType(tokenValue: any): string {
     const trimmed = tokenValue.trim();
     if (HEX_COLOR_REGEX.test(trimmed)) return 'color';
     if (RGB_HSL_COLOR_REGEX.test(trimmed)) return 'color';
+    if (MODERN_COLOR_REGEX.test(trimmed)) return 'color';
     if (DIMENSION_REGEX.test(trimmed)) return 'dimension';
     if (DURATION_REGEX.test(trimmed)) return 'duration';
     return 'unknown';
