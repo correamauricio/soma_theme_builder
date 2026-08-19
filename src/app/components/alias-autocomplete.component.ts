@@ -18,7 +18,9 @@ import { PopoverComponent } from './ui/popover.component';
         [ngModel]="value"
         (ngModelChange)="onInputChange($event)"
         (focus)="onFocus()"
+        (blur)="onBlur()"
         (keydown)="onKeyDown($event)"
+        (click)="onInputClick($event)"
         placeholder="Value or {alias}"
         class="w-full bg-transparent border border-transparent hover:border-gray-600 focus:border-blue-500 focus:bg-gray-900 rounded px-1.5 py-1 text-xs font-mono text-gray-300 focus:text-white outline-none transition-all min-w-0"
       />
@@ -84,6 +86,7 @@ export class AliasAutocompleteComponent {
   @Input() value: string = '';
   @Input() currentPath: string = '';
   @Output() valueChange = new EventEmitter<string>();
+  @Output() valueCommit = new EventEmitter<string>();
 
   @ViewChild('inputRef') inputRef?: ElementRef<HTMLInputElement>;
   @ViewChild('containerRef') containerRef?: ElementRef<HTMLElement>;
@@ -137,12 +140,24 @@ export class AliasAutocompleteComponent {
 
     const cleanQuery = query.replace(/^\{|\}$/g, '');
 
-    return expandedTokens.filter(t => {
+    const filtered = expandedTokens.filter(t => {
       const matchPath = t.path.toLowerCase().includes(cleanQuery);
       const matchAlias = (`{${t.path.toLowerCase()}}`).includes(query);
       const matchValue = String(t.resolvedValue).toLowerCase().includes(cleanQuery);
       return matchPath || matchAlias || matchValue;
     }).slice(0, 15);
+
+    if (query) {
+      filtered.unshift({
+        path: query,
+        type: 'custom',
+        resolvedValue: query,
+        sourceFile: 'custom',
+        isSubMember: false
+      });
+    }
+
+    return filtered;
   });
 
   onInputChange(val: string) {
@@ -159,6 +174,17 @@ export class AliasAutocompleteComponent {
     this.selectedIndex.set(0);
   }
 
+  onBlur() {
+    this.valueCommit.emit(this.value);
+  }
+
+  onInputClick(event: MouseEvent) {
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      input.select();
+    }
+  }
+
   private extractQuery(val: string) {
     if (val.includes('{')) {
       const match = val.match(/\{([^}]*)$/);
@@ -171,9 +197,13 @@ export class AliasAutocompleteComponent {
   }
 
   selectToken(token: any) {
-    const aliasValue = `{${token.path}}`;
-    this.value = aliasValue;
-    this.valueChange.emit(aliasValue);
+    let finalValue = token.path;
+    if (token.type !== 'custom') {
+      finalValue = `{${token.path}}`;
+    }
+    this.value = finalValue;
+    this.valueChange.emit(finalValue);
+    this.valueCommit.emit(finalValue);
     this.isOpen.set(false);
   }
 
@@ -181,6 +211,8 @@ export class AliasAutocompleteComponent {
     if (!this.isOpen() || this.matchingTokens().length === 0) {
       if (event.key === 'ArrowDown' || event.key === '{') {
         this.isOpen.set(true);
+      } else if (event.key === 'Enter') {
+        this.valueCommit.emit(this.value);
       }
       return;
     }
@@ -203,6 +235,8 @@ export class AliasAutocompleteComponent {
         const selected = this.matchingTokens()[this.selectedIndex()];
         if (selected) {
           this.selectToken(selected);
+        } else {
+          this.valueCommit.emit(this.value);
         }
         break;
 
