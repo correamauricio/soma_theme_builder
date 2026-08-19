@@ -14,13 +14,14 @@ import { AliasAutocompleteComponent } from '../alias-autocomplete.component';
         class="flex-1"
         [value]="getValueString()"
         [currentPath]="token.path"
-        (valueChange)="onValueChange($event)"
+        (valueCommit)="onValueCommit($event)"
       ></app-alias-autocomplete>
       
       <div class="relative w-5 h-5 rounded-full overflow-hidden border border-gray-600 shadow-sm shrink-0" title="Click color picker to set HEX color (unlinks alias)">
          <input type="color" 
+                #colorPicker
                 [ngModel]="getColorPickerHex()"
-                (ngModelChange)="onColorPickerChange($event)"
+                (change)="onColorPickerChange(colorPicker.value)"
                 class="absolute -top-2 -left-2 w-10 h-10 cursor-pointer">
       </div>
     </div>
@@ -36,7 +37,7 @@ export class ColorNodeComponent {
     return String(this.token.value);
   }
 
-  onValueChange(val: string) {
+  onValueCommit(val: string) {
     this.updateToken.emit({ path: this.token.originalPath, value: val });
   }
 
@@ -67,6 +68,6 @@ export class ColorNodeComponent {
 
   onColorPickerChange(hexValue: string) {
     const formattedHex = this.formatToHex(hexValue);
-    this.onValueChange(formattedHex);
+    this.onValueCommit(formattedHex);
   }
 }
