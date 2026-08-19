@@ -75,7 +75,11 @@ export class CompositeNodeComponent {
   }
 
   getSubValueString(key: string): string {
-    return String(this.token.value[key]);
+    const val = this.token.value[key];
+    if (typeof val === 'object' && val !== null) {
+      return JSON.stringify(val);
+    }
+    return String(val);
   }
 
   onSubValueChange(key: string, val: string) {
