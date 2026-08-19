@@ -27,6 +27,16 @@ describe('CSS Strategies', () => {
       const css = primitiveStrategy.generate(token, '--color-primary');
       expect(css).toBe('  --color-primary: #3b82f6;\n');
     });
+
+    it('should format unknown complex object tokens without outputting [object Object]', () => {
+      const token = createMockToken('unknown', {
+        angle: '90deg',
+        colors: ['#f00', '#00f']
+      });
+      const css = primitiveStrategy.generate(token, '--gradient-test');
+      
+      expect(css).not.toContain('[object Object]');
+    });
   });
 
   describe('shadowStrategy', () => {
