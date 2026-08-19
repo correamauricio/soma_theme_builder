@@ -60,12 +60,22 @@ function formatTimingFunction(timingFunction: unknown): string {
 
 // --- Estratégias de Geração CSS ---
 
-/**
- * Estratégia padrão para valores primitivos (cores, dimensões, números, etc.).
- */
 export const primitiveStrategy: CssStrategy = {
   generate(token: FlatToken, baseVarName: string): string {
-    return formatCssDeclaration(baseVarName, token.resolvedValue);
+    const value = token.resolvedValue;
+    if (isPlainObject(value)) {
+      let css = '';
+      for (const [key, propValue] of Object.entries(value)) {
+        const kebabKey = toKebabCase(key);
+        const finalValue = Array.isArray(propValue) ? propValue.join(', ') : propValue;
+        css += formatCssDeclaration(`${baseVarName}-${kebabKey}`, finalValue);
+      }
+      return css;
+    }
+    if (Array.isArray(value)) {
+      return formatCssDeclaration(baseVarName, value.join(', '));
+    }
+    return formatCssDeclaration(baseVarName, value);
   }
 };
 
