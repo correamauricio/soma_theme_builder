@@ -37,6 +37,12 @@ describe('CSS Strategies', () => {
       
       expect(css).not.toContain('[object Object]');
     });
+
+    it('should format array value by joining with commas', () => {
+      const token = createMockToken('customArray', ['val1', 'val2']);
+      const css = primitiveStrategy.generate(token, '--array-test');
+      expect(css).toBe('  --array-test: val1, val2;\n');
+    });
   });
 
   describe('shadowStrategy', () => {
@@ -86,6 +92,16 @@ describe('CSS Strategies', () => {
       const token = createMockToken('shadow', 'none');
       const css = shadowStrategy.generate(token, '--shadow-none');
       expect(css).toBe('  --shadow-none: none;\n');
+    });
+
+    it('should format shadow array with mixed primitive and object values', () => {
+      const token = createMockToken('shadow', [
+        { offsetX: '0px', offsetY: '1px', blur: '2px', spread: '0px', color: '#000' },
+        'none',
+        123
+      ]);
+      const css = shadowStrategy.generate(token, '--shadow-mixed');
+      expect(css).toContain('  --shadow-mixed: 0px 1px 2px 0px #000, none, 123;\n');
     });
   });
 
