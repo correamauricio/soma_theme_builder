@@ -13,6 +13,11 @@ describe('alias-resolver.util', () => {
       expect(resolver(null)).toBeNull();
       expect(resolver(undefined)).toBeUndefined();
       expect(resolver('plain text')).toBe('plain text');
+      
+      const symbol = Symbol('test');
+      expect(resolver(symbol)).toBe(symbol);
+      const fn = () => {};
+      expect(resolver(fn)).toBe(fn);
     });
 
     it('should resolve a direct alias', () => {
@@ -77,6 +82,25 @@ describe('alias-resolver.util', () => {
       expect(resolver('{theme.card.header.title.fontSize}')).toBe('18px');
     });
 
+    it('should return original token alias if sub-property lookup fails midway', () => {
+      const tokenMap = new Map([
+        [
+          'theme.card',
+          {
+            value: {
+              header: {
+                title: 'Simple string, not an object'
+              }
+            }
+          }
+        ]
+      ]);
+
+      const resolver = createAliasResolver(tokenMap);
+      // It fails to find `fontSize` because `title` is not an object
+      expect(resolver('{theme.card.header.title.fontSize}')).toBe('{theme.card.header.title.fontSize}');
+    });
+
     it('should safely handle circular references without infinite loops', () => {
       const tokenMap = new Map([
         ['token.a', { value: '{token.b}' }],
@@ -132,6 +156,21 @@ describe('alias-resolver.util', () => {
       const resolver = createAliasResolver(tokenMap);
       expect(resolver('1px solid {color.border}')).toBe('1px solid #e5e7eb');
       expect(resolver('calc({spacing.unit} * 2)')).toBe('calc(4px * 2)');
+    });
+
+    it('should warn and keep placeholder when trying to inline a complex object into a string', () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const tokenMap = new Map([
+        ['shadow.elevation', { value: { offsetX: '0px', offsetY: '2px' } }]
+      ]);
+
+      const resolver = createAliasResolver(tokenMap);
+      const result = resolver('box-shadow: {shadow.elevation};');
+      
+      expect(result).toBe('box-shadow: {shadow.elevation};');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Cannot inline complex object token "shadow.elevation" into string: "box-shadow: {shadow.elevation};"');
+      
+      consoleWarnSpy.mockRestore();
     });
 
     it('should keep original placeholder if token is not found', () => {
