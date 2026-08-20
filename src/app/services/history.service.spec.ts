@@ -64,4 +64,34 @@ describe('HistoryService (Undo / Redo History Management)', () => {
     service.execute(cmd2);
     expect(service.canRedo()).toBe(false);
   });
+
+  it('should return early and do nothing when undo is called but the stack is empty', () => {
+    expect(service.canUndo()).toBe(false);
+    service.undo(); // Should not throw
+    expect(service.canUndo()).toBe(false);
+  });
+
+  it('should return early and do nothing when redo is called but the stack is empty', () => {
+    expect(service.canRedo()).toBe(false);
+    service.redo(); // Should not throw
+    expect(service.canRedo()).toBe(false);
+  });
+
+  it('should safely handle popping undefined from stack (although technically unreachable if length > 0)', () => {
+    const cmd = createMockCommand();
+    service.execute(cmd);
+    
+    // Forcibly clear internal state to test the if (command) guard
+    (service as any)._undoStack.set([]);
+    (service as any).canUndo = () => true; // force pass initial guard
+
+    service.undo();
+    expect(cmd.undo).not.toHaveBeenCalled();
+    
+    (service as any)._redoStack.set([]);
+    (service as any).canRedo = () => true;
+
+    service.redo();
+    expect(cmd.execute).toHaveBeenCalledTimes(1); // from first execute
+  });
 });
