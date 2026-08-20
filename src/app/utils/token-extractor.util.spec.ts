@@ -1,4 +1,4 @@
-﻿import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { extractFileTokenPaths } from './token-extractor.util';
 
 describe('extractFileTokenPaths', () => {
@@ -39,5 +39,56 @@ describe('extractFileTokenPaths', () => {
     // Expected behavior: parser should iterate root-level arrays and extract valid tokens
     expect(fileTokens?.tokens.length).toBeGreaterThan(0);
     expect(fileTokens?.tokens[0].path).toBe('color.blue');
+  });
+
+  it('should ignore null, undefined, or primitive nodes', () => {
+    const file = {
+      name: 'primitives.json',
+      content: {
+        color: null,
+        spacing: '10px',
+        border: 1,
+        bool: true
+      }
+    };
+    const result = extractFileTokenPaths([file]);
+    expect(result.get('primitives.json')?.tokens.length).toBe(0);
+  });
+
+  it('should inherit token type from parent group if explicit type is missing', () => {
+    const file = {
+      name: 'inherit.json',
+      content: {
+        color: {
+          $type: 'color',
+          blue: {
+            $value: '#0000ff'
+          }
+        }
+      }
+    };
+    const result = extractFileTokenPaths([file]);
+    const tokens = result.get('inherit.json')?.tokens;
+    expect(tokens?.length).toBe(1);
+    expect(tokens?.[0].type).toBe('color'); // Inherited
+  });
+
+  it('should ignore metadata properties in groups', () => {
+    const file = {
+      name: 'metadata.json',
+      content: {
+        color: {
+          $description: 'This is a color group',
+          '@metadata': 'some metadata',
+          red: {
+            $value: '#ff0000'
+          }
+        }
+      }
+    };
+    const result = extractFileTokenPaths([file]);
+    const tokens = result.get('metadata.json')?.tokens;
+    expect(tokens?.length).toBe(1);
+    expect(tokens?.[0].path).toBe('color.red');
   });
 });
