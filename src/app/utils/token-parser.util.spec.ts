@@ -137,5 +137,21 @@ describe('Token Parser & Variant Resolution', () => {
       expect(result['color']?.['blue']?._token).toBeDefined();
       expect(result['color']?.['blue']?.['500']?._token).toBeDefined();
     });
+
+    it('should skip tokens with empty originalPath', () => {
+      const flatTokens = [
+        {
+          path: '',
+          originalPath: [],
+          value: 'skip-me',
+          resolvedValue: 'skip-me',
+          type: 'unknown',
+          sourceFile: 'tokens.json'
+        }
+      ];
+
+      const result = buildGroupedTokens(flatTokens);
+      expect(result).toEqual({});
+    });
   });
 });
